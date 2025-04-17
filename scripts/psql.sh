@@ -1,0 +1,1 @@
+docker exec -it graze-db-1 psql --user postgres -d app
