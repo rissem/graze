@@ -42,6 +42,7 @@ const AddItem = () => {
     defaultValues: {
       title: "",
       description: "",
+      alternate_description: "",
     },
   })
 
@@ -111,6 +112,19 @@ const AddItem = () => {
                   id="description"
                   {...register("description")}
                   placeholder="Description"
+                  type="text"
+                />
+              </Field>
+
+              <Field
+                invalid={!!errors.alternate_description}
+                errorText={errors.alternate_description?.message}
+                label="Alternate Description"
+              >
+                <Input
+                  id="alternate_description"
+                  {...register("alternate_description")}
+                  placeholder="Alternate Description"
                   type="text"
                 />
               </Field>

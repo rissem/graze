@@ -88,6 +88,7 @@ function ItemsTable() {
             <Table.ColumnHeader w="sm">ID</Table.ColumnHeader>
             <Table.ColumnHeader w="sm">Title</Table.ColumnHeader>
             <Table.ColumnHeader w="sm">Description</Table.ColumnHeader>
+            <Table.ColumnHeader w="sm">Alt Description</Table.ColumnHeader>
             <Table.ColumnHeader w="sm">Actions</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
@@ -106,6 +107,13 @@ function ItemsTable() {
                 maxW="30%"
               >
                 {item.description || "N/A"}
+              </Table.Cell>
+              <Table.Cell
+                color={!item.alternate_description ? "gray" : "inherit"}
+                truncate
+                maxW="30%"
+              >
+                {item.alternate_description || "N/A"}
               </Table.Cell>
               <Table.Cell>
                 <ItemActionsMenu item={item} />

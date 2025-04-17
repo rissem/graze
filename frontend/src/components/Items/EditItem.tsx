@@ -33,6 +33,7 @@ interface EditItemProps {
 interface ItemUpdateForm {
   title: string
   description?: string
+  alternate_description?: string
 }
 
 const EditItem = ({ item }: EditItemProps) => {
@@ -50,6 +51,7 @@ const EditItem = ({ item }: EditItemProps) => {
     defaultValues: {
       ...item,
       description: item.description ?? undefined,
+      alternate_description: item.alternate_description ?? undefined,
     },
   })
 
@@ -119,6 +121,19 @@ const EditItem = ({ item }: EditItemProps) => {
                   id="description"
                   {...register("description")}
                   placeholder="Description"
+                  type="text"
+                />
+              </Field>
+
+              <Field
+                invalid={!!errors.alternate_description}
+                errorText={errors.alternate_description?.message}
+                label="Alternate Description"
+              >
+                <Input
+                  id="alternate_description"
+                  {...register("alternate_description")}
+                  placeholder="Alternate Description"
                   type="text"
                 />
               </Field>
