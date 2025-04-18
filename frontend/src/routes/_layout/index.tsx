@@ -1,4 +1,3 @@
-import { Box, Container, Text } from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
 
 import useAuth from "@/hooks/useAuth"
@@ -12,14 +11,15 @@ function Dashboard() {
 
   return (
     <>
-      <Container maxW="full">
-        <Box pt={12} m={4}>
-          <Text fontSize="2xl" truncate maxW="sm">
+      <div className="!container !max-w-full">
+        <div className="!pt-12 !m-4">
+          <p className="!text-2xl !truncate !max-w-sm">
             Hi, {currentUser?.full_name || currentUser?.email} 👋🏼
-          </Text>
-          <Text>Welcome back, nice to see you again!</Text>
-        </Box>
-      </Container>
+          </p>
+          <p className="!text-base">Welcome back, nice to see you again!</p>
+          <h1 className="!text-3xl font-bold">Hello</h1>
+        </div>
+      </div>
     </>
   )
 }
