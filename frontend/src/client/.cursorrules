@@ -1,1 +1,4 @@
 Never directly edit sdk.gen.ts or types.gen.ts
+Never run the dev server
+Proceed all tailwind classnames with "!"
+Don't use chakra for any new work. Use tailwind.

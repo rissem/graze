@@ -20,6 +20,7 @@ import { Route as LayoutIndexImport } from './routes/_layout/index'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutItemsImport } from './routes/_layout/items'
 import { Route as LayoutFeedsImport } from './routes/_layout/feeds'
+import { Route as LayoutDialogImport } from './routes/_layout/dialog'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
 
 // Create/Update Routes
@@ -69,6 +70,11 @@ const LayoutFeedsRoute = LayoutFeedsImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
+const LayoutDialogRoute = LayoutDialogImport.update({
+  path: '/dialog',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
 const LayoutAdminRoute = LayoutAdminImport.update({
   path: '/admin',
   getParentRoute: () => LayoutRoute,
@@ -102,6 +108,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/dialog': {
+      preLoaderRoute: typeof LayoutDialogImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/feeds': {
       preLoaderRoute: typeof LayoutFeedsImport
       parentRoute: typeof LayoutImport
@@ -126,6 +136,7 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren([
   LayoutRoute.addChildren([
     LayoutAdminRoute,
+    LayoutDialogRoute,
     LayoutFeedsRoute,
     LayoutItemsRoute,
     LayoutSettingsRoute,
