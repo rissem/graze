@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { useState, useRef, useEffect } from "react"
 import { FaPaperPlane, FaUser } from "react-icons/fa"
 import { RiRobotFill } from "react-icons/ri"
+import { OpenAPI } from "../../client/core/OpenAPI"
 
 export const Route = createFileRoute("/_layout/dialog")({
   component: Dialog,
@@ -14,27 +15,26 @@ interface Message {
   fullThinking?: string;
 }
 
-interface NewsCard {
+interface PongMessage {
   id: string;
-  title: string;
-  summary: string;
-  imageUrl: string;
-  source: string;
+  content: string;
+  timestamp: string;
 }
 
 function Dialog() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('Tell me what\'s new in the world, but skip the minor updates on developing stories');
+  const [input, setInput] = useState('Send a ping to the server');
   const [isEditing, setIsEditing] = useState(true);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState('');
-  const [newsCards, setNewsCards] = useState<NewsCard[]>([]);
+  const [pongMessages, setPongMessages] = useState<PongMessage[]>([]);
   const [showResponseInput, setShowResponseInput] = useState(false);
   const [responseInput, setResponseInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const responseTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const newsContainerRef = useRef<HTMLDivElement>(null);
+  const pongContainerRef = useRef<HTMLDivElement>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   // Auto-adjust textarea height
   useEffect(() => {
@@ -51,25 +51,34 @@ function Dialog() {
     }
   }, [responseInput]);
 
-  // Maintain scroll position when news cards are added to prevent jumping
+  // Maintain scroll position when pong messages are added to prevent jumping
   useEffect(() => {
     const currentScrollY = window.scrollY;
     
     return () => {
-      if (newsCards.length > 0) {
+      if (pongMessages.length > 0) {
         window.scrollTo(0, currentScrollY);
       }
     };
-  }, [newsCards]);
+  }, [pongMessages]);
 
-  // Show the response input area after news stories are fetched
+  // Show the response input area after pong messages are received
   useEffect(() => {
-    if (newsCards.length > 0 && !isStreaming && !isEditing) {
+    if (pongMessages.length > 0 && !isStreaming && !isEditing) {
       setShowResponseInput(true);
     } else {
       setShowResponseInput(false);
     }
-  }, [newsCards, isStreaming, isEditing]);
+  }, [pongMessages, isStreaming, isEditing]);
+
+  // Clean up EventSource on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,22 +89,55 @@ function Dialog() {
     setMessages([...messages, userMessage]);
     setIsEditing(false);
     
-    // Simulate thinking/streaming (in a real app, this would be an API call)
+    // Start streaming state
     setIsStreaming(true);
-    setStreamingText('');
+    setStreamingText('Connecting to server...');
+    setPongMessages([]);
     
-    // Mock thinking stream
-    const thinkingContent = "I'm analyzing recent news stories and filtering out minor updates on developing stories. Let me check various sources to identify significant news events that have occurred recently. I'll prioritize major headlines, breakthrough announcements, and important developments across different sectors including politics, technology, science, health, business, and global affairs. I'll organize these based on relevance and significance rather than simply chronological order. For each story, I'll provide enough context for understanding without requiring prior knowledge of the topic...";
-    let i = 0;
-    const streamInterval = setInterval(() => {
-      if (i < thinkingContent.length) {
-        setStreamingText(prev => prev + thinkingContent[i]);
-        i++;
-      } else {
-        clearInterval(streamInterval);
+    // Clean up any existing EventSource
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+    
+    // Determine the full URL to the SSE endpoint
+    const baseUrl = OpenAPI.BASE || '';
+    const ssePingUrl = `${baseUrl}/api/v1/utils/sse-ping/`;
+    
+    try {
+      // Create an EventSource for proper SSE handling
+      const eventSource = new EventSource(ssePingUrl, { withCredentials: OpenAPI.WITH_CREDENTIALS });
+      eventSourceRef.current = eventSource;
+      
+      let buffer = '';
+      
+      // Handle connection open
+      eventSource.onopen = () => {
+        setStreamingText('Connected to server, waiting for pings...');
+      };
+      
+      // Handle incoming messages
+      eventSource.onmessage = (event) => {
+        buffer += event.data + '\n';
         
-        // After "thinking", add the summary response
-        setTimeout(() => {
+        // Add to pong messages
+        setPongMessages(prev => [
+          ...prev,
+          {
+            id: String(prev.length),
+            content: event.data,
+            timestamp: new Date().toISOString()
+          }
+        ]);
+      };
+      
+      // Handle errors
+      eventSource.onerror = (error) => {
+        console.error('EventSource error:', error);
+        eventSource.close();
+        eventSourceRef.current = null;
+        
+        // If we have pings, consider it a success with early termination
+        if (pongMessages.length > 0) {
           setIsStreaming(false);
           setStreamingText('');
           
@@ -104,39 +146,61 @@ function Dialog() {
             ...prev, 
             { 
               role: 'summary', 
-              content: "Here are the major news stories, excluding minor updates on developing stories.", 
+              content: "Server ping test completed.", 
               showFullThinking: false,
-              fullThinking: thinkingContent
+              fullThinking: buffer
             }
           ]);
+        } else {
+          // Otherwise, it's an error
+          setIsStreaming(false);
+          setStreamingText('');
+          setMessages(prev => [
+            ...prev, 
+            { 
+              role: 'summary', 
+              content: `Error connecting to server`, 
+              showFullThinking: false
+            }
+          ]);
+        }
+      };
+      
+      // Automatically close after 12 seconds (allowing for all pings to complete)
+      setTimeout(() => {
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+          eventSourceRef.current = null;
           
-          // Add mock news cards
-          setNewsCards([
-            {
-              id: '1',
-              title: 'Major Climate Agreement Reached by G20 Nations',
-              summary: 'G20 nations have agreed to a landmark climate deal that sets ambitious carbon reduction targets for 2030, with binding commitments from all member states.',
-              imageUrl: 'https://placehold.co/400x200',
-              source: 'Global News Network'
-            },
-            {
-              id: '2',
-              title: 'Breakthrough in Quantum Computing Announced',
-              summary: 'Researchers have achieved quantum supremacy in a new stable architecture that could bring practical quantum computers closer to reality.',
-              imageUrl: 'https://placehold.co/400x200',
-              source: 'Tech Insights Journal'
-            },
-            {
-              id: '3',
-              title: 'Medical Researchers Develop New Cancer Treatment Protocol',
-              summary: 'A new treatment protocol combining immunotherapy and targeted drugs has shown 60% improvement in survival rates for advanced-stage patients.',
-              imageUrl: 'https://placehold.co/400x200',
-              source: 'Medical Science Today'
+          setIsStreaming(false);
+          setStreamingText('');
+          
+          // Add summary message
+          setMessages(prev => [
+            ...prev, 
+            { 
+              role: 'summary', 
+              content: "Server ping test completed.", 
+              showFullThinking: false,
+              fullThinking: buffer
             }
           ]);
-        }, 500);
-      }
-    }, 50);
+        }
+      }, 12000);
+      
+    } catch (error) {
+      console.error('Error setting up EventSource:', error);
+      setIsStreaming(false);
+      setStreamingText('');
+      setMessages(prev => [
+        ...prev, 
+        { 
+          role: 'summary', 
+          content: `Error connecting to server: ${(error as Error).message}`, 
+          showFullThinking: false
+        }
+      ]);
+    }
   };
 
   const toggleThinking = (index: number) => {
@@ -153,18 +217,24 @@ function Dialog() {
   };
 
   const startNewChat = () => {
+    // Clean up any existing EventSource
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    
     setMessages([]);
-    setNewsCards([]);
+    setPongMessages([]);
     setShowResponseInput(false);
     setResponseInput('');
-    setInput('Tell me what\'s new in the world, but skip the minor updates on developing stories');
+    setInput('Send a ping to the server');
     setIsEditing(true);
   };
 
   return (
     <div className="!container !max-w-4xl !mx-auto">
       <div className="!pt-6 !pb-32">
-        <h1 className="!text-2xl !font-semibold !mb-8">News Summary</h1>
+        <h1 className="!text-2xl !font-semibold !mb-8">Ping-Pong Server Test</h1>
         
         {/* Messages container */}
         <div className="!flex !flex-col !space-y-6 !mb-6">
@@ -188,7 +258,7 @@ function Dialog() {
                     <div className="!bg-purple-100 !rounded-full !w-8 !h-8 !flex !items-center !justify-center">
                       <RiRobotFill className="!text-purple-500" />
                     </div>
-                    <div className="!font-medium">AI</div>
+                    <div className="!font-medium">Server</div>
                   </div>
                   <div className="!text-lg !mb-2">
                     {message.showFullThinking && message.fullThinking 
@@ -196,18 +266,20 @@ function Dialog() {
                       : message.content}
                   </div>
                   
-                  <button 
-                    onClick={() => toggleThinking(index)}
-                    className="!mt-2 !text-sm !text-blue-500 !hover:text-blue-700"
-                  >
-                    {message.showFullThinking ? 'Show summary' : 'Show thinking process'}
-                  </button>
+                  {message.fullThinking && (
+                    <button 
+                      onClick={() => toggleThinking(index)}
+                      className="!mt-2 !text-sm !text-blue-500 !hover:text-blue-700"
+                    >
+                      {message.showFullThinking ? 'Show summary' : 'Show raw response'}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           ))}
           
-          {/* Streaming thinking output */}
+          {/* Streaming output */}
           {isStreaming && (
             <div className="!bg-white !rounded-lg !shadow-sm !overflow-hidden">
               <div className="!p-4">
@@ -215,7 +287,7 @@ function Dialog() {
                   <div className="!bg-purple-100 !rounded-full !w-8 !h-8 !flex !items-center !justify-center">
                     <RiRobotFill className="!text-purple-500" />
                   </div>
-                  <div className="!font-medium">AI</div>
+                  <div className="!font-medium">Server</div>
                 </div>
                 <div className="!text-gray-600 !italic">
                   {streamingText}
@@ -224,23 +296,24 @@ function Dialog() {
             </div>
           )}
           
-          {/* News cards */}
-          <div ref={newsContainerRef}>
-            {newsCards.length > 0 && (
+          {/* Pong messages */}
+          <div ref={pongContainerRef}>
+            {pongMessages.length > 0 && (
               <div className="!mt-6 !space-y-6">
-                {newsCards.map(card => (
-                  <div key={card.id} className="!bg-white !rounded-lg !shadow-sm !overflow-hidden">
+                {pongMessages.map(pong => (
+                  <div key={pong.id} className="!bg-white !rounded-lg !shadow-sm !overflow-hidden">
                     <div className="!p-4">
                       <div className="!flex !items-center !gap-3 !mb-3">
                         <div className="!bg-purple-100 !rounded-full !w-8 !h-8 !flex !items-center !justify-center">
                           <RiRobotFill className="!text-purple-500" />
                         </div>
-                        <div className="!font-medium">{card.source}</div>
+                        <div className="!font-medium">Server Response</div>
                       </div>
-                      <h3 className="!font-bold !text-xl !mb-2">{card.title}</h3>
-                      <p className="!text-gray-700 !mb-4">{card.summary}</p>
-                      <div className="!mt-2 !w-full">
-                        <img src={card.imageUrl} alt={card.title} className="!w-full !h-48 !object-cover !rounded-md" />
+                      <div className="!flex !justify-between !items-center">
+                        <h3 className="!font-bold !text-xl !mb-2">{pong.content}</h3>
+                        <span className="!text-xs !text-gray-500">
+                          {new Date(pong.timestamp).toLocaleTimeString()}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -249,14 +322,14 @@ function Dialog() {
             )}
           </div>
           
-          {/* Response input area shown after news stories */}
+          {/* Response input area shown after pong messages */}
           {showResponseInput && (
             <div className="!mt-8">
               <textarea
                 ref={responseTextareaRef}
                 value={responseInput}
                 onChange={(e) => setResponseInput(e.target.value)}
-                placeholder="What would you like to know more about?"
+                placeholder="Any thoughts about the ping test?"
                 className="!w-full !p-2 !text-lg !border-b !border-gray-200 !focus:outline-none !focus:border-blue-500 !min-h-[80px] !resize-none !bg-transparent"
               />
             </div>
