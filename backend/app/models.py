@@ -174,3 +174,11 @@ class TokenPayload(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str = Field(min_length=8, max_length=40)
+
+
+# SSE Event model
+class SSEEvent(SQLModel):
+    data: str
+    event: str | None = None
+    id: str | None = None
+    retry: int | None = None

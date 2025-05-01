@@ -1,8 +1,11 @@
+import asyncio
+
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from pydantic.networks import EmailStr
 
 from app.api.deps import get_current_active_superuser
-from app.models import Message
+from app.models import Message, SSEEvent
 from app.utils import generate_test_email, send_email
 
 router = APIRouter(prefix="/utils", tags=["utils"])
@@ -29,3 +32,30 @@ def test_email(email_to: EmailStr) -> Message:
 @router.get("/health-check/")
 async def health_check() -> bool:
     return True
+
+
+@router.get("/sse-ping/")
+async def sse_ping():
+    """
+    SSE endpoint that sends "Pong" every 0.5 seconds for 10 seconds.
+
+    Returns a streaming response with server-sent events.
+    """
+
+    async def event_generator():
+        for i in range(20):  # 10 seconds at 0.5 seconds per iteration
+            if i % 2 == 0:  # Send "Pong" every 0.5 seconds
+                event = SSEEvent(data="Pong", id=str(i // 2))
+                yield f"id: {event.id}\ndata: {event.data}\n\n"
+            await asyncio.sleep(
+                0.25
+            )  # Sleep for 0.25 seconds, so total 0.5 seconds with processing time
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
+    )
