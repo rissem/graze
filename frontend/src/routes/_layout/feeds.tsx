@@ -72,7 +72,7 @@ function FeedsPage() {
 
   // Mutation to unfollow a feed
   const unfollowFeedMutation = useMutation({
-    mutationFn: (feedId: string) => FeedsService.unfollowFeed({ feed_id: feedId }),
+    mutationFn: (feedId: string) => FeedsService.unfollowFeed({ feedId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userFeeds"] });
       showSuccessToast("You've unfollowed this feed.");
