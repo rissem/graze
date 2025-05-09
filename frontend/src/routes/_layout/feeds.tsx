@@ -1,27 +1,10 @@
-import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import {
-  Box,
-  Button,
-  Container,
-  Heading,
-  HStack,
-  Input,
-  Link,
-  Spinner,
-  Stack,
-  Text,
-  VStack,
-} from "@chakra-ui/react";
-import { useForm } from "react-hook-form";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { FeedsService } from "../../client/sdk.gen";
-import { FeedCreate } from "../../client/types.gen";
-import { 
-  Card, 
-  CardBody, 
-  CardHeader
-} from "../../components/ui/card";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
+import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { FeedsService } from "../../client/sdk.gen"
+import type { FeedCreate } from "../../client/types.gen"
+import { Card, CardBody, CardHeader } from "../../components/ui/card"
 import {
   DialogActionTrigger,
   DialogBody,
@@ -32,18 +15,18 @@ import {
   DialogRoot,
   DialogTitle,
   DialogTrigger,
-} from "../../components/ui/dialog";
-import { Field } from "../../components/ui/field";
-import useCustomToast from "../../hooks/useCustomToast";
+} from "../../components/ui/dialog"
+import { Field } from "../../components/ui/field"
+import useCustomToast from "../../hooks/useCustomToast"
 
 export const Route = createFileRoute("/_layout/feeds")({
   component: FeedsPage,
-});
+})
 
 function FeedsPage() {
-  const [isOpen, setIsOpen] = useState(false);
-  const queryClient = useQueryClient();
-  const { showSuccessToast, showErrorToast } = useCustomToast();
+  const [isOpen, setIsOpen] = useState(false)
+  const queryClient = useQueryClient()
+  const { showSuccessToast, showErrorToast } = useCustomToast()
 
   // Query to fetch user's feeds
   const {
@@ -54,141 +37,352 @@ function FeedsPage() {
   } = useQuery({
     queryKey: ["userFeeds"],
     queryFn: () => FeedsService.readUserFeeds(),
-  });
+  })
 
   // Mutation to create a new feed
   const createFeedMutation = useMutation({
     mutationFn: (feedData: FeedCreate) =>
       FeedsService.createFeed({ requestBody: feedData }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["userFeeds"] });
-      showSuccessToast("The feed has been added successfully.");
-      setIsOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["userFeeds"] })
+      showSuccessToast("The feed has been added successfully.")
+      setIsOpen(false)
     },
     onError: (error: any) => {
-      showErrorToast(error.message || "Failed to add feed");
+      showErrorToast(error.message || "Failed to add feed")
     },
-  });
+  })
 
   // Mutation to unfollow a feed
   const unfollowFeedMutation = useMutation({
     mutationFn: (feedId: string) => FeedsService.unfollowFeed({ feedId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["userFeeds"] });
-      showSuccessToast("You've unfollowed this feed.");
+      queryClient.invalidateQueries({ queryKey: ["userFeeds"] })
+      showSuccessToast("You've unfollowed this feed.")
     },
     onError: (error: any) => {
-      showErrorToast(error.message || "Failed to unfollow feed");
+      showErrorToast(error.message || "Failed to unfollow feed")
     },
-  });
+  })
 
   // Form for adding a new feed
-  const { register, handleSubmit, reset } = useForm<FeedCreate>();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FeedCreate>()
 
   const onSubmit = (data: FeedCreate) => {
-    createFeedMutation.mutate(data);
-    reset();
-  };
+    createFeedMutation.mutate(data)
+    reset()
+  }
 
   return (
-    <Container maxW="container.xl" py={8}>
-      <HStack justify="space-between" mb={6}>
-        <Heading size="lg">My Feeds</Heading>
-        <DialogRoot
-          open={isOpen}
-          onOpenChange={({ open }) => setIsOpen(open)}
-        >
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">My Feeds</h1>
+        <DialogRoot open={isOpen} onOpenChange={({ open }) => setIsOpen(open)}>
           <DialogTrigger asChild>
-            <Button colorScheme="teal">Add New Feed</Button>
+            <button
+              type="button"
+              className="bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded transition-colors duration-200 shadow-sm flex items-center"
+            >
+              <svg
+                className="w-4 h-4 mr-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+              Add New Feed
+            </button>
           </DialogTrigger>
-          <DialogContent>
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <DialogCloseTrigger />
-              <DialogHeader>
-                <DialogTitle>Add New Feed</DialogTitle>
+          <DialogContent className="bg-white rounded-lg shadow-xl border border-gray-200 max-w-md w-full mx-auto p-0 overflow-hidden">
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col">
+              <DialogHeader className="bg-gray-50 px-6 py-4 border-b border-gray-200 relative">
+                <DialogTitle className="text-lg font-semibold text-gray-900">
+                  Add New Feed
+                </DialogTitle>
+                <DialogCloseTrigger />
               </DialogHeader>
-              <DialogBody>
-                <Stack gap={4}>
-                  <Field label="Feed Name">
-                    <Input {...register("name", { required: true })} placeholder="My Favorite Blog" />
-                  </Field>
-                  <Field label="Feed URL">
-                    <Input
-                      {...register("url", { required: true })}
-                      placeholder="https://example.com/feed.xml"
+              <DialogBody className="p-6">
+                <div className="flex flex-col gap-5">
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="name"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Feed Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="name"
+                      {...register("name", {
+                        required: "Feed name is required",
+                      })}
+                      placeholder="My Favorite Blog"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
                     />
-                  </Field>
-                  <Field label="Description">
-                    <Input
+                    {errors.name && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {errors.name.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="url"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Feed URL <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="url"
+                      type="url"
+                      {...register("url", {
+                        required: "Feed URL is required",
+                        pattern: {
+                          value:
+                            /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/,
+                          message: "Please enter a valid URL",
+                        },
+                      })}
+                      placeholder="https://example.com/feed.xml"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                    />
+                    {errors.url && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {errors.url.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="description"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Description{" "}
+                      <span className="text-gray-400 text-xs">(optional)</span>
+                    </label>
+                    <textarea
+                      id="description"
                       {...register("description")}
                       placeholder="A brief description of this feed"
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
                     />
-                  </Field>
-                </Stack>
+                  </div>
+                </div>
               </DialogBody>
-              <DialogFooter>
+              <DialogFooter className="bg-gray-50 px-6 py-4 border-t border-gray-200">
                 <DialogActionTrigger asChild>
-                  <Button variant="outline" mr={3}>
+                  <button
+                    type="button"
+                    className="border border-gray-300 bg-white text-gray-700 font-medium py-2 px-4 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200 mr-3"
+                  >
                     Cancel
-                  </Button>
+                  </button>
                 </DialogActionTrigger>
-                <Button
-                  colorScheme="teal"
+                <button
+                  className={`bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors duration-200 ${
+                    createFeedMutation.isPending
+                      ? "opacity-70 cursor-not-allowed"
+                      : ""
+                  }`}
                   type="submit"
-                  loading={createFeedMutation.isPending}
+                  disabled={createFeedMutation.isPending}
                 >
-                  Add Feed
-                </Button>
+                  {createFeedMutation.isPending ? (
+                    <span className="inline-flex items-center">
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      Adding...
+                    </span>
+                  ) : (
+                    "Add Feed"
+                  )}
+                </button>
               </DialogFooter>
             </form>
           </DialogContent>
         </DialogRoot>
-      </HStack>
+      </div>
 
       {isLoading ? (
-        <Box textAlign="center" py={10}>
-          <Spinner size="xl" />
-        </Box>
+        <div className="text-center py-10">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-600" />
+        </div>
       ) : isError ? (
-        <Box textAlign="center" py={10}>
-          <Text color="red.500">Error loading feeds: {(error as Error).message}</Text>
-        </Box>
+        <div className="text-center py-10">
+          <p className="text-red-600">
+            Error loading feeds: {(error as Error).message}
+          </p>
+        </div>
       ) : userFeeds?.data.length === 0 ? (
-        <Card>
-          <CardBody>
-            <Text textAlign="center">
-              You haven't subscribed to any feeds yet. Click "Add New Feed" to get started.
-            </Text>
-          </CardBody>
-        </Card>
-      ) : (
-        <VStack gap={4} align="stretch">
-          {userFeeds?.data.map((feed) => (
-            <Card key={feed.id}>
-              <CardHeader>
-                <HStack justify="space-between">
-                  <Heading size="md">{feed.name}</Heading>
-                  <Button
-                    size="sm"
-                    colorScheme="red"
-                    variant="outline"
-                    onClick={() => unfollowFeedMutation.mutate(feed.id)}
-                    loading={unfollowFeedMutation.isPending}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+          <div className="p-6">
+            <div className="text-center py-10">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                No feeds yet
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                You haven't subscribed to any feeds yet.
+              </p>
+              <div className="mt-6">
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                >
+                  <svg
+                    className="-ml-1 mr-2 h-5 w-5"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
                   >
-                    Unfollow
-                  </Button>
-                </HStack>
-              </CardHeader>
-              <CardBody>
-                <Text mb={2}>{feed.description || "No description available"}</Text>
-                <Link href={feed.url} color="teal.500">
-                  {feed.url}
-                </Link>
-              </CardBody>
-            </Card>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  Add New Feed
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {userFeeds?.data.map((feed) => (
+            <div
+              key={feed.id}
+              className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden h-full hover:shadow-md transition-all duration-200 flex flex-col"
+            >
+              <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg font-semibold text-gray-900 truncate max-w-[70%]">
+                    {feed.name}
+                  </h2>
+                  <button
+                    type="button"
+                    className={`text-sm border border-red-600 text-red-600 hover:bg-red-50 font-medium py-1 px-3 rounded transition-colors duration-200 flex-shrink-0 ${
+                      unfollowFeedMutation.isPending
+                        ? "opacity-70 cursor-not-allowed"
+                        : ""
+                    }`}
+                    onClick={() => unfollowFeedMutation.mutate(feed.id)}
+                    disabled={unfollowFeedMutation.isPending}
+                  >
+                    {unfollowFeedMutation.isPending ? (
+                      <span className="inline-flex items-center">
+                        <svg
+                          className="animate-spin -ml-1 mr-1 h-3 w-3 text-red-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Unfollowing...
+                      </span>
+                    ) : (
+                      "Unfollow"
+                    )}
+                  </button>
+                </div>
+              </div>
+              <div className="p-4 flex flex-col flex-grow">
+                <p className="mb-3 text-gray-600 line-clamp-3 flex-grow">
+                  {feed.description || "No description available"}
+                </p>
+                <a
+                  href={feed.url}
+                  className="text-teal-600 hover:text-teal-800 text-sm inline-flex items-center w-full transition-colors duration-200 group mt-auto"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <svg
+                    className="w-4 h-4 mr-1 flex-shrink-0 group-hover:text-teal-800 transition-colors duration-200"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                  <span className="truncate">{feed.url}</span>
+                </a>
+              </div>
+            </div>
           ))}
-        </VStack>
+        </div>
       )}
-    </Container>
-  );
-} 
+    </div>
+  )
+}
