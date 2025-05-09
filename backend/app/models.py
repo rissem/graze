@@ -1,8 +1,9 @@
+import uuid
 from datetime import datetime, timezone
+
+import sqlalchemy
 from pydantic import EmailStr, HttpUrl
 from sqlmodel import Field, Relationship, SQLModel
-import uuid
-from sqlalchemy import String
 
 
 # Shared properties
@@ -110,7 +111,7 @@ class ItemsPublic(SQLModel):
 
 # Feed shared properties
 class FeedBase(SQLModel):
-    url: HttpUrl = Field(sa_type=String(255), nullable=False)
+    url: HttpUrl = Field(sa_type=sqlalchemy.String, nullable=False)
     name: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=500)
 
@@ -122,7 +123,7 @@ class FeedCreate(FeedBase):
 
 # Properties to receive on feed update
 class FeedUpdate(SQLModel):
-    url: HttpUrl | None = Field(default=None, sa_type=String(255))
+    url: HttpUrl | None = Field(default=None, sa_type=sqlalchemy.String)
     name: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=500)
 

@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import AsyncGenerator
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
@@ -35,14 +36,14 @@ async def health_check() -> bool:
 
 
 @router.get("/sse-ping/")
-async def sse_ping():
+async def sse_ping() -> StreamingResponse:
     """
     SSE endpoint that sends "Pong" every 0.5 seconds for 10 seconds.
 
     Returns a streaming response with server-sent events.
     """
 
-    async def event_generator():
+    async def event_generator() -> AsyncGenerator[str, None]:
         for i in range(20):  # 10 seconds at 0.5 seconds per iteration
             if i % 2 == 0:  # Send "Pong" every 0.5 seconds
                 event = SSEEvent(data="Pong", id=str(i // 2))

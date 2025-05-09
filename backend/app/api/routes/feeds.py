@@ -9,9 +9,7 @@ from app.models import (
     Feed,
     FeedCreate,
     FeedPublic,
-    FeedWithStats,
     FeedsPublic,
-    FeedUpdate,
     Message,
     UserFeed,
 )
