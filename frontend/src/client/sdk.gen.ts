@@ -33,6 +33,8 @@ import type {
   LoginResetPasswordResponse,
   LoginRecoverPasswordHtmlContentData,
   LoginRecoverPasswordHtmlContentResponse,
+  OpmlImportOpmlData,
+  OpmlImportOpmlResponse,
   PrivateCreateUserData,
   PrivateCreateUserResponse,
   UsersReadUsersData,
@@ -398,6 +400,30 @@ export class LoginService {
       path: {
         email: data.email,
       },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+}
+
+export class OpmlService {
+  /**
+   * Import Opml
+   * Import feeds from an OPML file
+   * @param data The data for the request.
+   * @param data.formData
+   * @returns OpmlImportResponse Successful Response
+   * @throws ApiError
+   */
+  public static importOpml(
+    data: OpmlImportOpmlData,
+  ): CancelablePromise<OpmlImportOpmlResponse> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/opml/import",
+      formData: data.formData,
+      mediaType: "multipart/form-data",
       errors: {
         422: "Validation Error",
       },

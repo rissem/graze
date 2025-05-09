@@ -9,6 +9,10 @@ export type Body_login_login_access_token = {
   client_secret?: string | null
 }
 
+export type Body_opml_import_opml = {
+  file: Blob | File
+}
+
 export type FeedCreate = {
   url: string
   name: string
@@ -65,6 +69,12 @@ export type Message = {
 export type NewPassword = {
   token: string
   new_password: string
+}
+
+export type OpmlImportResponse = {
+  message: string
+  imported_count: number
+  skipped_count: number
 }
 
 export type PrivateUserCreate = {
@@ -219,6 +229,12 @@ export type LoginRecoverPasswordHtmlContentData = {
 }
 
 export type LoginRecoverPasswordHtmlContentResponse = string
+
+export type OpmlImportOpmlData = {
+  formData: Body_opml_import_opml
+}
+
+export type OpmlImportOpmlResponse = OpmlImportResponse
 
 export type PrivateCreateUserData = {
   requestBody: PrivateUserCreate

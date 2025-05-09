@@ -183,3 +183,9 @@ class SSEEvent(SQLModel):
     event: str | None = None
     id: str | None = None
     retry: int | None = None
+
+
+# OPML Import response
+class OpmlImportResponse(Message):
+    imported_count: int
+    skipped_count: int
